@@ -25,7 +25,7 @@ export function InputPanel({
           className={inputType === "text" ? "segment active" : "segment"}
           onClick={() => onInputTypeChange("text")}
         >
-          Plaintext
+          Text
         </button>
         <button
           type="button"
@@ -38,7 +38,7 @@ export function InputPanel({
 
       {inputType === "text" ? (
         <>
-          <label className="label" htmlFor="plaintext">{mode === "encrypt" ? "Plaintext" : "Ciphertext"}</label>
+          <label className="label" htmlFor="plaintext">Input</label>
           <textarea
             id="plaintext"
             className="textarea"
