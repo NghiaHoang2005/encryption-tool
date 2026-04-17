@@ -55,7 +55,8 @@ export function toBase64(bytes: Uint8Array): string {
 }
 
 export function fromBase64(base64: string): Uint8Array {
-  const binary = atob(base64);
+  const normalized = base64.trim().replace(/\s+/g, "");
+  const binary = atob(normalized);
   const out = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i += 1) {
     out[i] = binary.charCodeAt(i);

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { runEncryption } from "../application/encrypt.usecase";
 import { AlgorithmType, CryptoMode, InputType, OutputFormat } from "../application/dto";
-import { utf8ToBytes } from "../domain/crypto/common/bytes";
+import { toBase64, utf8ToBytes } from "../domain/crypto/common/bytes";
 import { parseInputByFormat } from "../domain/crypto/common/encoding";
 import { AlgorithmSelector } from "../components/AlgorithmSelector";
 import { FileActions } from "../components/FileActions";
@@ -9,7 +9,7 @@ import { InputPanel } from "../components/InputPanel";
 import { KeyPanel } from "../components/KeyPanel";
 import { OutputPanel } from "../components/OutputPanel";
 import { readFileAsBytes } from "../infrastructure/file/readFile";
-import { saveBytesToFile } from "../infrastructure/file/saveFile";
+import { saveTextToFile } from "../infrastructure/file/saveFile";
 
 export function EncryptPage() {
   const [mode, setMode] = useState<CryptoMode>("encrypt");
@@ -32,14 +32,14 @@ export function EncryptPage() {
     if (algorithm === "RSA") {
       return "Enter RSA public key n,e for block-based encryption.";
     }
-    return "All algorithms are implemented manually, without encryption libraries.";
+    return "Supports AES, DES, RSA encryption and decryption. Enter key and plaintext to see the result.";
   }, [algorithm, mode]);
 
   const handleRun = async () => {
     try {
       setBusy(true);
       setError("");
-      const inputBytes =
+      let inputBytes =
         inputType === "text"
           ? mode === "encrypt"
             ? utf8ToBytes(textValue)
@@ -47,6 +47,11 @@ export function EncryptPage() {
           : selectedFile
             ? await readFileAsBytes(selectedFile)
             : new Uint8Array(0);
+
+      if (mode === "decrypt" && inputType === "file") {
+        const fileAsText = new TextDecoder().decode(inputBytes);
+        inputBytes = parseInputByFormat(fileAsText, "base64");
+      }
 
       const result = runEncryption({
         mode,
@@ -78,9 +83,10 @@ export function EncryptPage() {
     if (!outputBytes) {
       return;
     }
-    const ext = mode === "encrypt" ? (outputFormat === "hex" ? "enc.txt" : "enc.b64.txt") : "dec.bin";
+    const base64Content = toBase64(outputBytes);
+    const ext = mode === "encrypt" ? "enc.b64.txt" : "dec.b64.txt";
     const prefix = mode === "encrypt" ? "encrypted" : "decrypted";
-    saveBytesToFile(outputBytes, `${prefix}.${ext}`);
+    saveTextToFile(base64Content, `${prefix}.${ext}`);
   };
 
   return (
@@ -122,6 +128,9 @@ export function EncryptPage() {
                   <option value="hex">Hex</option>
                   <option value="base64">Base64</option>
                 </select>
+                <p className="muted" style={{ marginTop: 10 }}>
+                  File input in decrypt mode is treated as Base64 and converted to binary before decrypt.
+                </p>
               </>
             ) : null}
           </section>
